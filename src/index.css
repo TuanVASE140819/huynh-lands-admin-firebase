@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=Fira+Code&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  height: 100%;
+  margin: 0;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+}
+
+code {
+  font-family: 'Fira Code', source-code-pro, Menlo, Monaco, Consolas,
+    'Courier New', monospace;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.ant-table-body {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+
+.ant-table-body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px; /* For horizontal scroll */
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background-color: #f5f5f5;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background-color: #8c8c8c;
+}
+
+/* Styles for disabled DatePicker */
+.ant-picker.ant-picker-disabled.ant-picker-outlined .ant-picker-input > input {
+  color: black;
+}
+.ant-select.ant-select-sm.ant-select-outlined.ant-select-single.ant-select-show-arrow.ant-select-disabled
+  .ant-select-selector {
+  color: black;
+}
+
+/* Firefox-specific styling for thin scrollbar */
+.scrollbar-custom {
+  scrollbar-width: thin; /* Thin scrollbar for Firefox */
+  scrollbar-color: #888 #f1f1f1; /* Thumb color and track color for Firefox */
+}
+
+.font-custom {
+  font-family: var(--font-mono) !important;
+}
+.font-outline {
+  text-shadow:
+    -4px -4px 0 white,
+    4px -4px 0 white,
+    -4px 4px 0 white,
+    4px 4px 0 white,
+    -4px 0px 0 white,
+    4px 0px 0 white,
+    0px -4px 0 white,
+    0px 4px 0 white,
+    -3px -3px 0 white,
+    3px -3px 0 white,
+    -3px 3px 0 white,
+    3px 3px 0 white;
+}
