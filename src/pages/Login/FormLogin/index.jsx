@@ -7,12 +7,30 @@ import { LockOutlined, UserOutlined, KeyOutlined } from '@ant-design/icons'
 import { loginSchema } from '../../../schemas/login/loginSchemas'
 import { useDispatch, useSelector } from 'react-redux'
 import { loginUser } from '../../../redux/actions/userActions'
+import { USER } from '../../../redux/constants/constants'
+import Cookies from 'js-cookie'
 
 function FormLogin() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const handleSubmit = (values, action) => {
-    dispatch(loginUser(values, navigate, action))
+    if (values.email === 'admin' && values.password === 'admin') {
+      // Đăng nhập mặc định, không call API
+      dispatch({
+        type: USER.DISPATCH_INFO_LOGIN,
+        payload: { email: 'admin', name: 'Admin', role: 'admin' },
+      })
+      localStorage.setItem('userEmail', 'admin')
+      // Set accessToken giả lập để hệ thống nhận biết đã đăng nhập
+      Cookies.set('accessToken', 'fake-admin-token', { expires: 1 })
+      navigate('/')
+      action.resetForm()
+      // Có thể thêm Toast thông báo thành công nếu muốn
+      // ToastCus.fire({ icon: 'success', title: 'Đăng nhập thành công' })
+    } else {
+      // Đăng nhập bình thường (call API)
+      dispatch(loginUser(values, navigate, action))
+    }
   }
 
   const formik = useFormik({

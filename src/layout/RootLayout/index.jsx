@@ -18,18 +18,11 @@ import Cookies from 'js-cookie'
 const { Header, Sider, Content } = Layout
 
 const itemsMenu = [
-  // {
-  //   key: 'sub1',
-  //   label: 'Chấm công',
-  //   icon: <ContactsOutlined />,
-  //   children: [
-  //     {
-  //       key: '/chamcong/checkinout',
-  //       title: 'Check in/out',
-  //       label: <Link to={'chamcong/checkinout'}>Check in/out</Link>,
-  //     },
-  //   ],
-  // },
+  {
+    key: '/seo',
+    label: <Link to='/seo'>Quản lý SEO</Link>,
+    icon: <ContactsOutlined />,
+  },
 ]
 
 function RootLayout(props) {
