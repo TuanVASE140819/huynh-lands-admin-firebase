@@ -10,8 +10,8 @@ const Dashboard = () => {
           <img src={srcLogo} className='w-72 h-72'></img>
         </div>
         <div className='flex flex-col justify-center text-amber-500 font-bold text-[2.5rem] font-sans font-outline text-center'>
-          <p className='leading-10'>NGHI88 - Admin</p>
-          <p className='leading-10 text-[1.8rem]'>Nhà cái đến từ tương lai</p>
+          <p className='leading-10'>TuanWebApp</p>
+          <p className='leading-10 text-[1.8rem]'>.........</p>
         </div>
       </div>
     </div>

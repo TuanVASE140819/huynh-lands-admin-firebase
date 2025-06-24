@@ -51,7 +51,7 @@ function Login() {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
                 >
-                  NGHI88 - Admin
+                  TuanWebApp
                 </motion.span>
               </div>
               <motion.ul
@@ -60,7 +60,7 @@ function Login() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
               >
-                {renderLi('Nhà cái đến từ tương lai')}
+                {renderLi('.........')}
               </motion.ul>
             </motion.div>
             <motion.div

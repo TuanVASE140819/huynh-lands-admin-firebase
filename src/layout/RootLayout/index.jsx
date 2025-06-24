@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, Outlet, useLocation,useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button, ConfigProvider, Layout, Menu, theme } from 'antd'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ContactsOutlined,
+  HomeOutlined,
 } from '@ant-design/icons'
 import logo from '../../assets/images/logo/logo.png'
 import ButtonLogout from '../../components/common/ButtonLogout'
@@ -19,9 +20,55 @@ const { Header, Sider, Content } = Layout
 
 const itemsMenu = [
   {
+    key: '/',
+    label: <Link to='/'>Trang chủ</Link>,
+    icon: <HomeOutlined />,
+  },
+  {
     key: '/seo',
     label: <Link to='/seo'>Quản lý SEO</Link>,
     icon: <ContactsOutlined />,
+  },
+  {
+    key: 'real-estate-parent',
+    label: 'Quản lý Bất động sản',
+    icon: <ContactsOutlined />,
+    children: [
+      {
+        key: '/real-estate/type',
+        label: <Link to='/real-estate/type'>Loại bất động sản</Link>,
+      },
+      {
+        key: '/real-estate',
+        label: <Link to='/real-estate'>Bất động sản</Link>,
+      },
+    ],
+  },
+  {
+    key: 'page-management',
+    label: 'Quản lý trang',
+    icon: <ContactsOutlined />,
+    children: [
+      {
+        key: '/history',
+        label: <Link to='/history'>Trang giới thiệu</Link>,
+      },
+      {
+        key: '/contact',
+        label: <Link to='/contact'>Liên hệ</Link>,
+      },
+    ],
+  },
+  {
+    key: 'news-management',
+    label: 'Quản lý bản tin',
+    icon: <ContactsOutlined />,
+    children: [
+      {
+        key: '/real-estate-news',
+        label: <Link to='/real-estate-news'>Bản tin bất động sản</Link>,
+      },
+    ],
   },
 ]
 
@@ -109,7 +156,7 @@ function RootLayout(props) {
               {!collapsed ? (
                 <Link to='/'>
                   <h2 className='text-lg font-semibold text-white'>
-                    NGHI88 - Admin
+                    TuanWebApp
                   </h2>
                 </Link>
               ) : (
