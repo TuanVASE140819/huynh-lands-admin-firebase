@@ -1,29 +1,20 @@
 import React, { useState } from 'react'
 import { Form, Input, Button, Select, Modal, AutoComplete, Tabs } from 'antd'
+import { fetchContact, updateContact } from '../../api/contactApi'
+import { fetchOffice, updateOffice } from '../../api/officeApi'
 
 const initialContact = {
   vi: {
     quickContact: {
       hotline: '0123 456 789',
       email: 'info@thuyanhland.com',
-      time: '8:00 - 18:00 (T2-T7)',
+      workingHours: '8:00 - 18:00 (T2-T7)',
     },
     office: {
       quan1: {
         name: 'Văn phòng chính - Quận 1',
         address: '123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM',
         info: '028 3822 1234 | quan1@thuyanhland.com',
-      },
-      quan7: {
-        name: 'Chi nhánh Quận 7',
-        address: '456 Đường Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP.HCM',
-        info: '028 5412 5678 | quan7@thuyanhland.com',
-      },
-      thuduc: {
-        name: 'Chi nhánh Thủ Đức',
-        address:
-          '789 Đường Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức, TP.HCM',
-        info: '028 3715 9012 | thuduc@thuyanhland.com',
       },
     },
     social: {
@@ -37,25 +28,9 @@ const initialContact = {
     quickContact: {
       hotline: '0123 456 789',
       email: 'info@thuyanhland.com',
-      time: '8:00am - 6:00pm (Mon-Sat)',
+      workingHours: '8:00am - 6:00pm (Mon-Sat)',
     },
-    office: {
-      quan1: {
-        name: 'Main Office - District 1',
-        address: '123 Nguyen Hue St, Ben Nghe Ward, District 1, HCMC',
-        info: '028 3822 1234 | quan1@thuyanhland.com',
-      },
-      quan7: {
-        name: 'Branch - District 7',
-        address: '456 Nguyen Thi Thap St, Tan Phu Ward, District 7, HCMC',
-        info: '028 5412 5678 | quan7@thuyanhland.com',
-      },
-      thuduc: {
-        name: 'Branch - Thu Duc',
-        address: '789 Vo Van Ngan St, Linh Chieu Ward, Thu Duc City, HCMC',
-        info: '028 3715 9012 | thuduc@thuyanhland.com',
-      },
-    },
+    office: {},
     social: {
       facebook: '#',
       youtube: '#',
@@ -67,23 +42,13 @@ const initialContact = {
     quickContact: {
       hotline: '0123 456 789',
       email: 'info@thuyanhland.com',
-      time: '오전 8:00 - 오후 6:00 (월-토)',
+      workingHours: '오전 8:00 - 오후 6:00 (월-토)',
     },
     office: {
       quan1: {
         name: '본사 - 1구',
         address: '123 Nguyen Hue, Ben Nghe, 1구, 호치민',
         info: '028 3822 1234 | quan1@thuyanhland.com',
-      },
-      quan7: {
-        name: '지점 - 7구',
-        address: '456 Nguyen Thi Thap, Tan Phu, 7구, 호치민',
-        info: '028 5412 5678 | quan7@thuyanhland.com',
-      },
-      thuduc: {
-        name: '지점 - Thu Duc',
-        address: '789 Vo Van Ngan, Linh Chieu, Thu Duc, 호치민',
-        info: '028 3715 9012 | thuduc@thuyanhland.com',
       },
     },
     social: {
@@ -122,20 +87,90 @@ const ContactPage = () => {
       value: JSON.stringify(contact[lang][key], null, 2),
     })
   }
-  const handleOk = () => {
+  const handleOk = async () => {
     try {
       const val = JSON.parse(modal.value)
-      setContact({
-        ...contact,
-        [lang]: {
-          ...contact[lang],
-          [modal.key]: val,
-        },
-      })
+      if (modal.key === 'quickContact') {
+        await updateContact({
+          hotline: val.hotline,
+          email: val.email,
+          workingHours: val.workingHours || val.workingHours,
+        })
+        setContact({
+          ...contact,
+          [lang]: {
+            ...contact[lang],
+            quickContact: {
+              hotline: val.hotline,
+              email: val.email,
+              workingHours: val.workingHours || val.workingHours,
+            },
+          },
+        })
+      } else if (modal.key === 'office') {
+        await updateOffice(lang, val)
+        setContact({
+          ...contact,
+          [lang]: {
+            ...contact[lang],
+            office: {
+              quan1: {
+                name: val.name,
+                address: val.address,
+                info: `${val.phone} | ${val.gmail}`,
+              },
+            },
+          },
+        })
+      } else {
+        setContact({
+          ...contact,
+          [lang]: {
+            ...contact[lang],
+            [modal.key]: val,
+          },
+        })
+      }
     } catch {}
     setModal({ open: false, key: '', value: '' })
   }
   const handleCancel = () => setModal({ open: false, key: '', value: '' })
+
+  React.useEffect(() => {
+    fetchContact(lang)
+      .then((data) => {
+        setContact((prev) => ({
+          ...prev,
+          [lang]: {
+            ...prev[lang],
+            quickContact: {
+              hotline: data.hotline,
+              email: data.email,
+              workingHours: data.workingHours,
+            },
+          },
+        }))
+      })
+      .catch(() => {})
+    fetchOffice(lang)
+      .then((data) => {
+        setContact((prev) => ({
+          ...prev,
+          [lang]: {
+            ...prev[lang],
+            office: {
+              ...prev[lang].office,
+              quan1: {
+                name: data.name,
+                address: data.address,
+                info: `${data.phone} | ${data.gmail}`,
+              },
+            },
+          },
+        }))
+      })
+      .catch(() => {})
+  }, [lang])
 
   return (
     <div className='p-6 bg-gray-50 min-h-screen'>
@@ -231,7 +266,9 @@ const ContactPage = () => {
             </div>
             <div className='flex items-center gap-2'>
               <span className='text-blue-500'>⏰</span> Giờ làm việc{' '}
-              <span className='ml-auto'>{contact[lang].quickContact.time}</span>
+              <span className='ml-auto'>
+                {contact[lang].quickContact.workingHours}
+              </span>
             </div>
           </div>
           <div
@@ -241,7 +278,7 @@ const ContactPage = () => {
             <h3 className='text-lg font-bold text-blue-700 mb-3'>
               Địa chỉ văn phòng
             </h3>
-            <div className='mb-2'>
+            <div>
               <span className='font-semibold'>
                 {contact[lang].office.quan1.name}
               </span>
@@ -250,28 +287,6 @@ const ContactPage = () => {
               <br />
               <span className='text-gray-500 text-sm'>
                 {contact[lang].office.quan1.info}
-              </span>
-            </div>
-            <div className='mb-2'>
-              <span className='font-semibold'>
-                {contact[lang].office.quan7.name}
-              </span>
-              <br />
-              {contact[lang].office.quan7.address}
-              <br />
-              <span className='text-gray-500 text-sm'>
-                {contact[lang].office.quan7.info}
-              </span>
-            </div>
-            <div>
-              <span className='font-semibold'>
-                {contact[lang].office.thuduc.name}
-              </span>
-              <br />
-              {contact[lang].office.thuduc.address}
-              <br />
-              <span className='text-gray-500 text-sm'>
-                {contact[lang].office.thuduc.info}
               </span>
             </div>
           </div>

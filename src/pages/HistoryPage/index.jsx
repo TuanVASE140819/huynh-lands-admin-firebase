@@ -1,5 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Modal, Input, Button, Tabs } from 'antd'
+import { fetchHistory, updateHistory } from '../../api/historyApi'
+import { fetchMission, updateMission } from '../../api/missionApi'
+import { fetchVision, updateVision } from '../../api/visionApi'
 
 const initialBlocks = {
   vi: [
@@ -67,20 +70,126 @@ const AboutPage = () => {
   const [lang, setLang] = useState('vi')
   const [blocks, setBlocks] = useState(initialBlocks)
   const [modal, setModal] = useState({ open: false, key: '', value: '' })
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([fetchHistory(lang), fetchMission(lang), fetchVision(lang)])
+      .then(([history, mission, vision]) => {
+        setBlocks((prev) => ({
+          ...prev,
+          [lang]: [
+            {
+              key: 'history',
+              title: history.title,
+              content: history.content,
+            },
+            {
+              key: 'mission',
+              title: mission.title,
+              content: mission.content,
+            },
+            {
+              key: 'vision',
+              title: vision.title,
+              content: vision.content,
+            },
+            ...prev[lang].slice(3),
+          ],
+        }))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [lang])
 
   const handleOpenModal = (block) => {
-    setModal({ open: true, key: block.key, value: block.content })
+    setModal({
+      open: true,
+      key: block.key,
+      value: block.content,
+      title: block.title,
+    })
   }
-  const handleOk = () => {
+  const handleOk = async () => {
+    if (modal.key === 'history') {
+      try {
+        setLoading(true)
+        await updateHistory(lang, {
+          title: modal.title,
+          content: modal.value,
+        })
+        setBlocks((prev) => ({
+          ...prev,
+          [lang]: prev[lang].map((b) =>
+            b.key === modal.key
+              ? { ...b, title: modal.title, content: modal.value }
+              : b,
+          ),
+        }))
+      } catch (e) {
+        // handle error if needed
+      } finally {
+        setLoading(false)
+        setModal({ open: false, key: '', value: '', title: '' })
+      }
+      return
+    }
+    if (modal.key === 'mission') {
+      try {
+        setLoading(true)
+        await updateMission(lang, {
+          title: modal.title,
+          content: modal.value,
+        })
+        setBlocks((prev) => ({
+          ...prev,
+          [lang]: prev[lang].map((b) =>
+            b.key === modal.key
+              ? { ...b, title: modal.title, content: modal.value }
+              : b,
+          ),
+        }))
+      } catch (e) {
+        // handle error if needed
+      } finally {
+        setLoading(false)
+        setModal({ open: false, key: '', value: '', title: '' })
+      }
+      return
+    }
+    if (modal.key === 'vision') {
+      try {
+        setLoading(true)
+        await updateVision(lang, {
+          title: modal.title,
+          content: modal.value,
+        })
+        setBlocks((prev) => ({
+          ...prev,
+          [lang]: prev[lang].map((b) =>
+            b.key === modal.key
+              ? { ...b, title: modal.title, content: modal.value }
+              : b,
+          ),
+        }))
+      } catch (e) {
+        // handle error if needed
+      } finally {
+        setLoading(false)
+        setModal({ open: false, key: '', value: '', title: '' })
+      }
+      return
+    }
     setBlocks({
       ...blocks,
       [lang]: blocks[lang].map((b) =>
         b.key === modal.key ? { ...b, content: modal.value } : b,
       ),
     })
-    setModal({ open: false, key: '', value: '' })
+    setModal({ open: false, key: '', value: '', title: '' })
   }
-  const handleCancel = () => setModal({ open: false, key: '', value: '' })
+  const handleCancel = () =>
+    setModal({ open: false, key: '', value: '', title: '' })
 
   return (
     <div className='p-6 max-w-6xl mx-auto'>
@@ -95,7 +204,9 @@ const AboutPage = () => {
           onClick={() => handleOpenModal(blocks[lang][0])}
         >
           <h2 className='text-2xl font-bold mb-2'>{blocks[lang][0].title}</h2>
-          <p className='mb-2 whitespace-pre-line'>{blocks[lang][0].content}</p>
+          <p className='mb-2 whitespace-pre-line'>
+            {loading && lang === 'vi' ? 'Đang tải...' : blocks[lang][0].content}
+          </p>
         </div>
         <div className='flex-1 flex items-center justify-center'>
           <div className='w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center'>
@@ -199,17 +310,21 @@ const AboutPage = () => {
         </div>
       </div>
       <Modal
-        title={`Chỉnh sửa: ${blocks[lang].find((b) => b.key === modal.key)?.title || ''}`}
+        title={
+          <Input
+            value={modal.title}
+            onChange={(e) => setModal((m) => ({ ...m, title: e.target.value }))}
+            className='mb-2'
+          />
+        }
         open={modal.open}
         onOk={handleOk}
         onCancel={handleCancel}
-        okText='Lưu'
-        cancelText='Hủy'
       >
         <Input.TextArea
           rows={6}
           value={modal.value}
-          onChange={(e) => setModal({ ...modal, value: e.target.value })}
+          onChange={(e) => setModal((m) => ({ ...m, value: e.target.value }))}
         />
       </Modal>
     </div>
