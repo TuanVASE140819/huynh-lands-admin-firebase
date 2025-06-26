@@ -1,23 +1,21 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { Modal, Form, Input, Row, Col, Button, Tabs, Select } from 'antd'
-import { createProperty } from '../../api/properties'
 import { getPropertyTypes } from '../../api/propertyType'
+import axios from 'axios'
 
-const ModalCreate = ({ open, onCancel, onSuccess }) => {
+const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
   const [form] = Form.useForm()
-  const [loading, setLoading] = React.useState(false)
-  const [propertyTypes, setPropertyTypes] = React.useState([])
-  const [businessType, setBusinessType] = React.useState('')
-
+  const [loading, setLoading] = useState(false)
+  const [propertyTypes, setPropertyTypes] = useState([])
   const langTabs = [
     { key: 'vi', label: 'Tiếng Việt' },
     { key: 'en', label: 'English' },
     { key: 'ko', label: '한국어' },
   ]
-  const [activeLang, setActiveLang] = React.useState('vi')
+  const [activeLang, setActiveLang] = useState('vi')
 
-  React.useEffect(() => {
-    // Lấy danh sách loại bất động sản
+  useEffect(() => {
     getPropertyTypes().then((res) => {
       setPropertyTypes(
         (res.propertyTypes || []).map((item) => ({
@@ -28,56 +26,145 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
     })
   }, [])
 
+  // Chỉ setFieldsValue khi mở modal với id mới hoặc khi modal được mở lần đầu
+  const prevIdRef = React.useRef(null)
+  useEffect(() => {
+    if (data && data.id !== prevIdRef.current && open) {
+      prevIdRef.current = data.id
+      form.setFieldsValue({
+        propertyCode: data.vi?.code || '', // Mã bất động sản
+        businessType: data.businessType || '', // Loại hình giao dịch
+        propertyType: data.propertyType || undefined,
+        image: data.images && data.images.length > 0 ? data.images[0] : '',
+        area: data.vi?.area,
+        price: data.vi?.price,
+        bedrooms: data.vi?.bedrooms,
+        bathrooms: data.vi?.bathrooms,
+        floors: data.vi?.floors,
+        hashtags: Array.isArray(data.vi?.hashtags)
+          ? data.vi.hashtags.join(',')
+          : '',
+        direction: {
+          vi: data.vi?.direction || '',
+          en: data.en?.direction || '',
+          ko: data.ko?.direction || '',
+        },
+        title: {
+          vi: data.vi?.name,
+          en: data.en?.name,
+          ko: data.ko?.name,
+        },
+        location: {
+          vi: data.vi?.address,
+          en: data.en?.address,
+          ko: data.ko?.address,
+        },
+        type: {
+          vi: data.vi?.code,
+          en: data.en?.code,
+          ko: data.ko?.code,
+        },
+        description: {
+          vi: data.vi?.description,
+          en: data.en?.description,
+          ko: data.ko?.description,
+        },
+        features: {
+          vi: Array.isArray(data.vi?.extras) ? data.vi.extras.join(',') : '',
+          en: Array.isArray(data.en?.extras) ? data.en.extras.join(',') : '',
+          ko: Array.isArray(data.ko?.extras) ? data.ko.extras.join(',') : '',
+        },
+      })
+    }
+    // Không resetFields ở đây để tránh mất dữ liệu khi chuyển tab/ngôn ngữ
+  }, [data, open])
+
   const handleSubmit = async (values) => {
     setLoading(true)
     try {
-      // Chuẩn hóa dữ liệu cho từng ngôn ngữ
       const langs = ['vi', 'en', 'ko']
       const property = {}
       langs.forEach((lang) => {
         property[lang] = {
-          name: values?.title?.[lang] || '',
-          address: values?.location?.[lang] || '',
-          code: values.propertyCode || values?.type?.[lang] || '',
-          hashtags: values?.features?.[lang]
-            ? values.features[lang]
+          name:
+            values?.title?.[lang] !== undefined
+              ? values.title[lang]
+              : data?.[lang]?.name || '',
+          address:
+            values?.location?.[lang] !== undefined
+              ? values.location[lang]
+              : data?.[lang]?.address || '',
+          code:
+            values.propertyCode !== undefined && values.propertyCode !== ''
+              ? values.propertyCode
+              : values?.type?.[lang] !== undefined
+              ? values.type[lang]
+              : data?.[lang]?.code || '',
+          hashtags: values.hashtags
+            ? values.hashtags
                 .split(',')
                 .map((i) => i.trim())
                 .filter(Boolean)
-            : [],
-          price: Number(values?.price) || 0,
-          area: Number(values?.area) || 0,
-          landArea: Number(values?.area) || 0,
-          bedrooms: Number(values?.bedrooms) || 0,
-          bathrooms: Number(values?.bathrooms) || 0,
-          floors: Number(values?.floors) || 0,
-          direction: values?.direction?.[lang] || '', // bổ sung hướng
-          description: values?.description?.[lang] || '',
+            : values?.features?.[lang]
+              ? values.features[lang]
+                  .split(',')
+                  .map((i) => i.trim())
+                  .filter(Boolean)
+              : data?.[lang]?.hashtags || [],
+          price:
+            values?.price !== undefined
+              ? Number(values.price)
+              : data?.[lang]?.price || 0,
+          area:
+            values?.area !== undefined
+              ? Number(values.area)
+              : data?.[lang]?.area || 0,
+          landArea:
+            values?.area !== undefined
+              ? Number(values.area)
+              : data?.[lang]?.landArea || 0,
+          bedrooms:
+            values?.bedrooms !== undefined
+              ? Number(values.bedrooms)
+              : data?.[lang]?.bedrooms || 0,
+          bathrooms:
+            values?.bathrooms !== undefined
+              ? Number(values.bathrooms)
+              : data?.[lang]?.bathrooms || 0,
+          floors:
+            values?.floors !== undefined
+              ? Number(values.floors)
+              : data?.[lang]?.floors || 0,
+          direction:
+            values?.direction?.[lang] !== undefined
+              ? values.direction[lang]
+              : data?.[lang]?.direction || '',
+          description:
+            values?.description?.[lang] !== undefined
+              ? values.description[lang]
+              : data?.[lang]?.description || '',
           highlights: values?.features?.[lang]
             ? values.features[lang]
                 .split(',')
                 .map((i) => i.trim())
                 .filter(Boolean)
-            : [],
+            : data?.[lang]?.highlights || [],
           extras: values?.features?.[lang]
             ? values.features[lang]
                 .split(',')
                 .map((i) => i.trim())
                 .filter(Boolean)
-            : [],
-          mapLocation: { lat: 0, lng: 0 },
+            : data?.[lang]?.extras || [],
+          mapLocation: data?.[lang]?.mapLocation || { lat: 0, lng: 0 },
         }
       })
-      // Gọi API qua hàm createProperty
-      await createProperty({
+      await axios.put(`http://localhost:8011/api/property/${data.id}`, {
         ...property,
-        images: values.image ? [values.image] : [],
-        propertyType: values.propertyType || null,
-        businessType: values.businessType || businessType || null,
+        images: values.image ? [values.image] : data.images || [],
+        propertyType: values.propertyType || data.propertyType || null,
+        businessType: values.businessType || data.businessType || null,
       })
-      form.resetFields()
       if (onSuccess) onSuccess()
-      onCancel()
     } catch (e) {
       // Xử lý lỗi nếu cần
     }
@@ -86,10 +173,11 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
 
   return (
     <Modal
-      title='Thêm bất động sản mới'
+      title='Cập nhật bất động sản'
       open={open}
       onCancel={onCancel}
       footer={null}
+      destroyOnClose
       width={900}
     >
       <Form layout='vertical' form={form} onFinish={handleSubmit}>
@@ -98,7 +186,8 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
             <Form.Item
               name='propertyCode'
               label='Mã bất động sản'
-              rules={[{ required: true, message: 'Nhập mã bất động sản' }]}
+              rules={[{ required: true, message: 'Nhập mã bất động sản' }]
+              }
             >
               <Input placeholder='Nhập mã bất động sản' />
             </Form.Item>
@@ -130,16 +219,11 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
                   { label: 'Thuê Bất Động Sản', value: 'rent' },
                   { label: 'Mua Bất Động Sản', value: 'buy' },
                 ]}
-                value={businessType}
-                onChange={setBusinessType}
               />
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item
-              name={['hashtags']}
-              label='Hashtag (cách nhau bởi dấu phẩy)'
-            >
+            <Form.Item name='hashtags' label='Hashtag (cách nhau bởi dấu phẩy)'>
               <Input placeholder='VD: sang trọng, trung tâm, view đẹp' />
             </Form.Item>
           </Col>
@@ -191,30 +275,32 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
                     <Input placeholder={`Nhập loại (${tab.label})`} />
                   </Form.Item>
                 </Col>
-                <Col span={16}>
+                <Col span={8}>
                   <Form.Item
-                    name={['description', tab.key]}
-                    label={`Mô tả (${tab.label})`}
+                    name={['direction', tab.key]}
+                    label={`Hướng (${tab.label})`}
                   >
-                    <Input.TextArea
-                      rows={2}
-                      placeholder={`Nhập mô tả (${tab.label})`}
+                    <Input placeholder={`Nhập hướng (${tab.label})`} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name={['features', tab.key]}
+                    label={`Tiện ích (${tab.label})`}
+                  >
+                    <Input
+                      placeholder={`Nhập tiện ích, cách nhau bởi dấu phẩy (${tab.label})`}
                     />
                   </Form.Item>
                 </Col>
               </Row>
               <Form.Item
-                name={['direction', tab.key]}
-                label={`Hướng (${tab.label})`}
+                name={['description', tab.key]}
+                label={`Mô tả (${tab.label})`}
               >
-                <Input placeholder={`Nhập hướng (${tab.label})`} />
-              </Form.Item>
-              <Form.Item
-                name={['features', tab.key]}
-                label={`Tiện ích (${tab.label})`}
-              >
-                <Input
-                  placeholder={`Nhập tiện ích, cách nhau bởi dấu phẩy (${tab.label})`}
+                <Input.TextArea
+                  rows={2}
+                  placeholder={`Nhập mô tả (${tab.label})`}
                 />
               </Form.Item>
             </Tabs.TabPane>
@@ -259,7 +345,7 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
             Hủy
           </Button>
           <Button type='primary' htmlType='submit' loading={loading}>
-            Thêm mới
+            Cập nhật
           </Button>
         </div>
       </Form>
@@ -267,4 +353,19 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
   )
 }
 
-export default ModalCreate
+// Thêm kiểm tra prop types cho ModalUpdate
+ModalUpdate.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  data: PropTypes.shape({
+    id: PropTypes.string,
+    propertyType: PropTypes.string,
+    images: PropTypes.array,
+    vi: PropTypes.object,
+    en: PropTypes.object,
+    ko: PropTypes.object,
+  }),
+  onSuccess: PropTypes.func,
+}
+
+export default ModalUpdate
