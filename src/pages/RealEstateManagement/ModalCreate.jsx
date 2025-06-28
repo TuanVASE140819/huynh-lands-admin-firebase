@@ -1,6 +1,18 @@
 import React from 'react'
-import { Modal, Form, Input, Row, Col, Button, Tabs, Select } from 'antd'
-import { createProperty } from '../../api/properties'
+import {
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  Button,
+  Tabs,
+  Select,
+  Upload,
+  Image,
+} from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { createProperty, uploadPropertyImage } from '../../api/properties'
 import { getPropertyTypes } from '../../api/propertyType'
 
 const ModalCreate = ({ open, onCancel, onSuccess }) => {
@@ -8,6 +20,9 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
   const [loading, setLoading] = React.useState(false)
   const [propertyTypes, setPropertyTypes] = React.useState([])
   const [businessType, setBusinessType] = React.useState('')
+  const [fileList, setFileList] = React.useState([])
+  const [previewOpen, setPreviewOpen] = React.useState(false)
+  const [previewImage, setPreviewImage] = React.useState('')
 
   const langTabs = [
     { key: 'vi', label: 'Tiếng Việt' },
@@ -27,6 +42,44 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
       )
     })
   }, [])
+
+  const getBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new window.FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = (error) => reject(error)
+    })
+
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj)
+    }
+    setPreviewImage(file.url || file.preview)
+    setPreviewOpen(true)
+  }
+
+  // Hàm upload file lên backend, trả về URL Dropbox
+  const uploadImageToServer = async (file) => {
+    const data = await uploadPropertyImage(file)
+    return data.url // backend trả về { url: 'https://...' }
+  }
+
+  // Xử lý khi chọn/chỉnh sửa file ảnh
+  const handleChange = async ({ fileList: newFileList }) => {
+    // Tìm các file mới chưa có url (chưa upload)
+    const filesToUpload = newFileList.filter((f) => !f.url && f.originFileObj)
+    for (const file of filesToUpload) {
+      try {
+        const url = await uploadImageToServer(file.originFileObj)
+        file.url = url
+      } catch (e) {
+        // Có thể show notification lỗi ở đây
+        file.status = 'error'
+      }
+    }
+    setFileList([...newFileList])
+  }
 
   const handleSubmit = async (values) => {
     setLoading(true)
@@ -68,14 +121,17 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
           mapLocation: { lat: 0, lng: 0 },
         }
       })
+      // Lấy các url ảnh đã upload
+      const imageUrls = fileList.filter((f) => f.url).map((f) => f.url)
       // Gọi API qua hàm createProperty
       await createProperty({
         ...property,
-        images: values.image ? [values.image] : [],
+        images: imageUrls,
         propertyType: values.propertyType || null,
         businessType: values.businessType || businessType || null,
       })
       form.resetFields()
+      setFileList([])
       if (onSuccess) onSuccess()
       onCancel()
     } catch (e) {
@@ -83,6 +139,14 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
     }
     setLoading(false)
   }
+
+  // Đặt lại uploadButton ở đúng vị trí
+  const uploadButton = (
+    <button style={{ border: 0, background: 'none' }} type='button'>
+      <PlusOutlined />
+      <div style={{ marginTop: 8 }}>Upload</div>
+    </button>
+  )
 
   return (
     <Modal
@@ -220,38 +284,63 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
             </Tabs.TabPane>
           ))}
         </Tabs>
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item name='area' label='Diện tích'>
-              <Input placeholder='VD: 150m²' />
+        <Row gutter={24}>
+          <Col span={7}>
+            <Form.Item label='Upload hình ảnh'>
+              <Upload
+                listType='picture-card'
+                fileList={fileList}
+                onPreview={handlePreview}
+                onChange={handleChange}
+                beforeUpload={() => false}
+                multiple
+              >
+                {fileList.length >= 8 ? null : uploadButton}
+              </Upload>
+              {previewImage && (
+                <Image
+                  wrapperStyle={{ display: 'none' }}
+                  preview={{
+                    visible: previewOpen,
+                    onVisibleChange: (visible) => setPreviewOpen(visible),
+                    afterOpenChange: (visible) =>
+                      !visible && setPreviewImage(''),
+                  }}
+                  src={previewImage}
+                />
+              )}
             </Form.Item>
           </Col>
-          <Col span={8}>
-            <Form.Item name='price' label='Giá'>
-              <Input placeholder='VD: 5.5 tỷ' />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name='image' label='Hình ảnh'>
-              <Input placeholder='Link hình ảnh' />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item name='bedrooms' label='Số phòng ngủ'>
-              <Input type='number' min={0} placeholder='0' />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name='bathrooms' label='Số phòng tắm'>
-              <Input type='number' min={0} placeholder='0' />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name='floors' label='Số tầng'>
-              <Input type='number' min={0} placeholder='0' />
-            </Form.Item>
+          <Col span={17}>
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item name='area' label='Diện tích'>
+                  <Input placeholder='VD: 150m²' />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item name='price' label='Giá'>
+                  <Input placeholder='VD: 5.5 tỷ' />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item name='bedrooms' label='Số phòng ngủ'>
+                  <Input type='number' min={0} placeholder='0' />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item name='bathrooms' label='Số phòng tắm'>
+                  <Input type='number' min={0} placeholder='0' />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item name='floors' label='Số tầng'>
+                  <Input type='number' min={0} placeholder='0' />
+                </Form.Item>
+              </Col>
+            </Row>
           </Col>
         </Row>
         <div className='flex justify-end'>

@@ -13,4 +13,16 @@ export const createProperty = async (data) => {
   }
 }
 
+// Upload ảnh bất động sản, trả về { url }
+export const uploadPropertyImage = async (file) => {
+  const formData = new FormData()
+  formData.append('image', file) // Đúng field là 'image'
+  const response = await axios.post(
+    `${API_URL}/property/upload-image`,
+    formData,
+    // Không cần headers, axios tự set
+  )
+  return response.data
+}
+
 // Có thể bổ sung các hàm khác như getProperty, updateProperty, deleteProperty nếu cần
