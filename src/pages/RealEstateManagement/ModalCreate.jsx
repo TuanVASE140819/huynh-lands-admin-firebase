@@ -65,26 +65,29 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
     return data.url // backend trả về { url: 'https://...' }
   }
 
-  // Xử lý khi chọn/chỉnh sửa file ảnh
-  const handleChange = async ({ fileList: newFileList }) => {
-    // Tìm các file mới chưa có url (chưa upload)
-    const filesToUpload = newFileList.filter((f) => !f.url && f.originFileObj)
-    for (const file of filesToUpload) {
-      try {
-        const url = await uploadImageToServer(file.originFileObj)
-        file.url = url
-      } catch (e) {
-        // Có thể show notification lỗi ở đây
-        file.status = 'error'
-      }
-    }
+  // Xử lý khi chọn/chỉnh sửa file ảnh (chỉ review, không upload)
+  const handleChange = ({ fileList: newFileList }) => {
     setFileList([...newFileList])
   }
 
   const handleSubmit = async (values) => {
     setLoading(true)
     try {
-      // Chuẩn hóa dữ liệu cho từng ngôn ngữ
+      // Upload tất cả ảnh chưa có url
+      const uploadedFileList = await Promise.all(
+        fileList.map(async (file) => {
+          if (!file.url && file.originFileObj) {
+            try {
+              const data = await uploadPropertyImage(file.originFileObj)
+              return { ...file, url: data.url }
+            } catch (e) {
+              file.status = 'error'
+              return file
+            }
+          }
+          return file
+        }),
+      )
       const langs = ['vi', 'en', 'ko']
       const property = {}
       langs.forEach((lang) => {
@@ -104,7 +107,7 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
           bedrooms: Number(values?.bedrooms) || 0,
           bathrooms: Number(values?.bathrooms) || 0,
           floors: Number(values?.floors) || 0,
-          direction: values?.direction?.[lang] || '', // bổ sung hướng
+          direction: values?.direction?.[lang] || '',
           description: values?.description?.[lang] || '',
           highlights: values?.features?.[lang]
             ? values.features[lang]
@@ -122,7 +125,7 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
         }
       })
       // Lấy các url ảnh đã upload
-      const imageUrls = fileList.filter((f) => f.url).map((f) => f.url)
+      const imageUrls = uploadedFileList.filter((f) => f.url).map((f) => f.url)
       // Gọi API qua hàm createProperty
       await createProperty({
         ...property,
