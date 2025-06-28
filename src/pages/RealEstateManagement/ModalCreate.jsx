@@ -10,6 +10,7 @@ import {
   Select,
   Upload,
   Image,
+  notification,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { createProperty, uploadPropertyImage } from '../../api/properties'
@@ -70,7 +71,31 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
     setFileList([...newFileList])
   }
 
+  // Hàm kiểm tra các trường bắt buộc cho từng ngôn ngữ
+  const validateRequiredLangFields = (values) => {
+    const langs = ['vi', 'en', 'ko']
+    const requiredFields = ['title', 'location'] // loại bỏ 'type'
+    let missing = []
+    langs.forEach((lang) => {
+      requiredFields.forEach((field) => {
+        if (!values?.[field]?.[lang] || values[field][lang].trim() === '') {
+          missing.push(`${field} (${lang})`)
+        }
+      })
+    })
+    return missing
+  }
+
   const handleSubmit = async (values) => {
+    const missingFields = validateRequiredLangFields(values)
+    if (missingFields.length > 0) {
+      notification.warning({
+        message: 'Thiếu thông tin',
+        description: `Vui lòng nhập đầy đủ các trường: ${missingFields.join(', ')}`,
+        duration: 4,
+      })
+      return
+    }
     setLoading(true)
     try {
       // Upload tất cả ảnh chưa có url
@@ -94,7 +119,7 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
         property[lang] = {
           name: values?.title?.[lang] || '',
           address: values?.location?.[lang] || '',
-          code: values.propertyCode || values?.type?.[lang] || '',
+          code: values.propertyCode || '', // loại bỏ values?.type?.[lang]
           hashtags: values?.features?.[lang]
             ? values.features[lang]
                 .split(',')
@@ -244,20 +269,8 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
                   </Form.Item>
                 </Col>
               </Row>
+              {/* Đã loại bỏ trường Loại */}
               <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    name={['type', tab.key]}
-                    label={`Loại (${tab.label})`}
-                    rules={
-                      tab.key === 'vi'
-                        ? [{ required: true, message: 'Nhập loại' }]
-                        : []
-                    }
-                  >
-                    <Input placeholder={`Nhập loại (${tab.label})`} />
-                  </Form.Item>
-                </Col>
                 <Col span={16}>
                   <Form.Item
                     name={['description', tab.key]}

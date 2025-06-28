@@ -1,13 +1,27 @@
 import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import { Modal, Form, Input, Row, Col, Button, Tabs, Select } from 'antd'
+import {
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  Button,
+  Tabs,
+  Select,
+  Upload,
+  Image,
+} from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
 import { getPropertyTypes } from '../../api/propertyType'
+import { uploadPropertyImage } from '../../api/properties'
 import axios from 'axios'
 
 const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [propertyTypes, setPropertyTypes] = useState([])
+  const [fileList, setFileList] = useState([])
   const langTabs = [
     { key: 'vi', label: 'Tiếng Việt' },
     { key: 'en', label: 'English' },
@@ -75,13 +89,41 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
           ko: Array.isArray(data.ko?.extras) ? data.ko.extras.join(',') : '',
         },
       })
+      setFileList(
+        (data.images || []).map((url, idx) => ({
+          uid: idx + '',
+          name: `image${idx}`,
+          status: 'done',
+          url,
+        })),
+      )
     }
     // Không resetFields ở đây để tránh mất dữ liệu khi chuyển tab/ngôn ngữ
   }, [data, open])
 
+  // Xử lý khi chọn/chỉnh sửa file ảnh (chỉ review, không upload)
+  const handleChange = ({ fileList: newFileList }) => {
+    setFileList([...newFileList])
+  }
+
   const handleSubmit = async (values) => {
     setLoading(true)
     try {
+      // Upload tất cả ảnh chưa có url
+      const uploadedFileList = await Promise.all(
+        fileList.map(async (file) => {
+          if (!file.url && file.originFileObj) {
+            try {
+              const data = await uploadPropertyImage(file.originFileObj)
+              return { ...file, url: data.url }
+            } catch (e) {
+              file.status = 'error'
+              return file
+            }
+          }
+          return file
+        }),
+      )
       const langs = ['vi', 'en', 'ko']
       const property = {}
       langs.forEach((lang) => {
@@ -97,20 +139,13 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
           code:
             values.propertyCode !== undefined && values.propertyCode !== ''
               ? values.propertyCode
-              : values?.type?.[lang] !== undefined
-              ? values.type[lang]
               : data?.[lang]?.code || '',
           hashtags: values.hashtags
             ? values.hashtags
                 .split(',')
                 .map((i) => i.trim())
                 .filter(Boolean)
-            : values?.features?.[lang]
-              ? values.features[lang]
-                  .split(',')
-                  .map((i) => i.trim())
-                  .filter(Boolean)
-              : data?.[lang]?.hashtags || [],
+            : data?.[lang]?.hashtags || [],
           price:
             values?.price !== undefined
               ? Number(values.price)
@@ -143,12 +178,7 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
             values?.description?.[lang] !== undefined
               ? values.description[lang]
               : data?.[lang]?.description || '',
-          highlights: values?.features?.[lang]
-            ? values.features[lang]
-                .split(',')
-                .map((i) => i.trim())
-                .filter(Boolean)
-            : data?.[lang]?.highlights || [],
+          highlights: data?.[lang]?.highlights || [],
           extras: values?.features?.[lang]
             ? values.features[lang]
                 .split(',')
@@ -160,7 +190,7 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
       })
       await axios.put(`http://localhost:8011/api/property/${data.id}`, {
         ...property,
-        images: values.image ? [values.image] : data.images || [],
+        images: uploadedFileList.filter((f) => f.url).map((f) => f.url),
         propertyType: values.propertyType || data.propertyType || null,
         businessType: values.businessType || data.businessType || null,
       })
@@ -186,8 +216,7 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
             <Form.Item
               name='propertyCode'
               label='Mã bất động sản'
-              rules={[{ required: true, message: 'Nhập mã bất động sản' }]
-              }
+              rules={[{ required: true, message: 'Nhập mã bất động sản' }]}
             >
               <Input placeholder='Nhập mã bất động sản' />
             </Form.Item>
@@ -319,7 +348,34 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
           </Col>
           <Col span={8}>
             <Form.Item name='image' label='Hình ảnh'>
-              <Input placeholder='Link hình ảnh' />
+              <Upload
+                listType='picture-card'
+                fileList={fileList}
+                onChange={handleChange}
+                beforeUpload={() => false}
+                multiple
+              >
+                {fileList.length >= 8 ? null : (
+                  <button
+                    style={{ border: 0, background: 'none' }}
+                    type='button'
+                  >
+                    <PlusOutlined />
+                    <div style={{ marginTop: 8 }}>Upload</div>
+                  </button>
+                )}
+              </Upload>
+              {fileList.length > 0 &&
+                fileList.map((f) =>
+                  f.url ? (
+                    <Image
+                      key={f.url}
+                      wrapperStyle={{ display: 'none' }}
+                      preview={{ visible: false }}
+                      src={f.url}
+                    />
+                  ) : null,
+                )}
             </Form.Item>
           </Col>
         </Row>
