@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Input, Button, Tabs } from 'antd'
-import { fetchHistory, updateHistory } from '../../api/historyApi'
+import { fetchHistory, updateHistory, uploadHistoryImage } from '../../api/historyApi'
 import { fetchMission, updateMission } from '../../api/missionApi'
 import { fetchVision, updateVision } from '../../api/visionApi'
 
@@ -71,6 +71,8 @@ const AboutPage = () => {
   const [blocks, setBlocks] = useState(initialBlocks)
   const [modal, setModal] = useState({ open: false, key: '', value: '' })
   const [loading, setLoading] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -209,8 +211,43 @@ const AboutPage = () => {
           </p>
         </div>
         <div className='flex-1 flex items-center justify-center'>
-          <div className='w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center'>
-            <span className='text-gray-400 text-4xl'>Ảnh</span>
+          <div className='w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center relative overflow-hidden'>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt='Ảnh lịch sử'
+                className='object-cover w-full h-full aspect-square'
+                style={{ aspectRatio: '1 / 1' }}
+              />
+            ) : (
+              <span className='text-gray-400 text-4xl'>Ảnh</span>
+            )}
+            <input
+              type='file'
+              accept='image/*'
+              className='absolute inset-0 opacity-0 cursor-pointer'
+              disabled={uploading}
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const formData = new FormData()
+                formData.append('image', file)
+                setUploading(true)
+                try {
+                  const res = await uploadHistoryImage(formData)
+                  setImageUrl(res.data.url)
+                } catch {
+                  // handle error if needed
+                } finally {
+                  setUploading(false)
+                }
+              }}
+            />
+            {uploading && (
+              <div className='absolute inset-0 bg-white bg-opacity-60 flex items-center justify-center'>
+                <span className='text-blue-500'>Đang tải...</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

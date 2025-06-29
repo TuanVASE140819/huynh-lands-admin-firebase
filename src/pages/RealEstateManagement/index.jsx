@@ -1,79 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Button, Input, Form, Row, Col, Tag, Select } from 'antd'
+import {
+  Table,
+  Button,
+  Input,
+  Form,
+  Row,
+  Col,
+  Tag,
+  Select,
+  Popconfirm,
+  message,
+} from 'antd'
 import ModalCreate from './ModalCreate'
 import ModalUpdate from './ModalUpdate'
 import { getPropertyTypes } from '../../api/propertyType'
+import { deleteProperty, updatePropertyStatus } from '../../api/propertyApi'
+import { getPropertyById, getProperties } from '../../api/propertyApi'
 import axios from 'axios'
 
 // Cột hiển thị theo yêu cầu mới
-const columns = [
-  {
-    title: 'STT',
-    key: 'index',
-    render: (text, record, index) => index + 1,
-    width: 60,
-    align: 'center',
-  },
-  {
-    title: 'Mã code',
-    dataIndex: ['vi', 'code'],
-    key: 'code',
-    render: (text, record) => record.vi?.code || '',
-    width: 120,
-  },
-  {
-    title: 'Tên BĐS',
-    dataIndex: ['vi', 'name'],
-    key: 'name',
-    render: (text, record) => record.vi?.name || '',
-    width: 200,
-  },
-  {
-    title: 'Hoạt động BĐS',
-    dataIndex: 'businessType',
-    key: 'businessType',
-    render: (text) =>
-      text === 'rent'
-        ? 'Thuê Bất Động Sản'
-        : text === 'buy'
-          ? 'Mua Bất Động Sản'
-          : '',
-    width: 150,
-  },
-  {
-    title: 'Loại BĐS',
-    dataIndex: 'propertyType',
-    key: 'propertyType',
-    render: (type, record) => {
-      // Hiển thị tên loại từ danh sách propertyTypes nếu có
-      const found = (record.propertyTypesList || []).find(
-        (item) => item.value === type,
-      )
-      return found ? found.label : type || ''
-    },
-    width: 180,
-  },
-  {
-    title: 'Địa chỉ',
-    dataIndex: ['vi', 'address'],
-    key: 'address',
-    render: (text, record) => record.vi?.address || '',
-    width: 200,
-  },
-  {
-    title: 'Giá',
-    dataIndex: ['vi', 'price'],
-    key: 'price',
-    render: (text, record) => record.vi?.price || '',
-    width: 120,
-  },
-  {
-    title: 'Hành động',
-    key: 'action',
-    render: (_, record) => <Button type='link'>Xem chi tiết</Button>,
-    width: 120,
-  },
-]
 
 const defaultFilter = {
   propertyType: '',
@@ -94,7 +39,89 @@ const RealEstateManagement = () => {
   const [selectedData, setSelectedData] = useState(null)
   const [propertyTypeUrl, setPropertyTypeUrl] = useState('')
   const [businessType, setBusinessType] = useState('')
-
+  const columns = [
+    {
+      title: 'STT',
+      key: 'index',
+      render: (text, record, index) => index + 1,
+      width: 60,
+      align: 'center',
+    },
+    {
+      title: 'Mã code',
+      dataIndex: ['vi', 'code'],
+      key: 'code',
+      render: (text, record) => record.vi?.code || '',
+      width: 120,
+    },
+    {
+      title: 'Tên BĐS',
+      dataIndex: ['vi', 'name'],
+      key: 'name',
+      render: (text, record) => record.vi?.name || '',
+      width: 200,
+    },
+    {
+      title: 'Hoạt động BĐS',
+      dataIndex: 'businessType',
+      key: 'businessType',
+      render: (text) =>
+        text === 'rent'
+          ? 'Thuê Bất Động Sản'
+          : text === 'buy'
+            ? 'Mua Bất Động Sản'
+            : '',
+      width: 150,
+    },
+    {
+      title: 'Loại BĐS',
+      dataIndex: 'propertyType',
+      key: 'propertyType',
+      render: (type, record) => {
+        // Hiển thị tên loại từ danh sách propertyTypes nếu có
+        const found = (record.propertyTypesList || []).find(
+          (item) => item.value === type,
+        )
+        return found ? found.label : type || ''
+      },
+      width: 180,
+    },
+    {
+      title: 'Địa chỉ',
+      dataIndex: ['vi', 'address'],
+      key: 'address',
+      render: (text, record) => record.vi?.address || '',
+      width: 200,
+    },
+    {
+      title: 'Giá',
+      dataIndex: ['vi', 'price'],
+      key: 'price',
+      render: (text, record) => record.vi?.price || '',
+      width: 120,
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status, record) => (
+        <Button
+          size='small'
+          type={status === 'active' ? 'primary' : 'default'}
+          onClick={() => handleToggleStatus(record.id, status)}
+        >
+          {status === 'active' ? 'Đang hiển thị' : 'Đang ẩn'}
+        </Button>
+      ),
+      width: 120,
+    },
+    {
+      title: 'Hành động',
+      key: 'action',
+      render: (_, record) => <Button type='link'>Xem chi tiết</Button>,
+      width: 120,
+    },
+  ]
   useEffect(() => {
     // Lấy danh sách loại bất động sản cho bộ lọc
     getPropertyTypes().then((res) => {
@@ -122,9 +149,7 @@ const RealEstateManagement = () => {
       if (propertyTypeUrl) {
         query.propertyType = propertyTypeUrl
       }
-      const res = await axios.get('http://localhost:8011/api/property', {
-        params: query,
-      })
+      const res = await getProperties(query)
       const propertyTypesList = propertyTypes
       setData(
         Array.isArray(res.data?.properties)
@@ -143,6 +168,7 @@ const RealEstateManagement = () => {
 
   useEffect(() => {
     fetchData(filter)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter])
 
   const onFinish = (values) => {
@@ -153,10 +179,31 @@ const RealEstateManagement = () => {
     setSelectedId(id)
     setOpenUpdateModal(true)
     try {
-      const res = await axios.get(`http://localhost:8011/api/property/${id}`)
+      const res = await getPropertyById(id)
       setSelectedData(res.data?.property || null)
     } catch {
       setSelectedData(null)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteProperty(id)
+      message.success('Xóa bất động sản thành công')
+      fetchData(filter)
+    } catch {
+      message.error('Xóa bất động sản thất bại')
+    }
+  }
+
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'hidden' : 'active'
+      await updatePropertyStatus(id, newStatus)
+      message.success('Cập nhật trạng thái thành công')
+      fetchData(filter)
+    } catch {
+      message.error('Cập nhật trạng thái thất bại')
     }
   }
 
@@ -239,12 +286,24 @@ const RealEstateManagement = () => {
               ? {
                   ...col,
                   render: (_, record) => (
-                    <Button
-                      type='link'
-                      onClick={() => handleShowDetail(record.id)}
-                    >
-                      Xem chi tiết
-                    </Button>
+                    <>
+                      <Button
+                        type='link'
+                        onClick={() => handleShowDetail(record.id)}
+                      >
+                        Xem chi tiết
+                      </Button>
+                      <Popconfirm
+                        title='Bạn chắc chắn muốn xóa bất động sản này?'
+                        onConfirm={() => handleDelete(record.id)}
+                        okText='Xóa'
+                        cancelText='Hủy'
+                      >
+                        <Button type='link' danger>
+                          Xóa
+                        </Button>
+                      </Popconfirm>
+                    </>
                   ),
                 }
               : col,

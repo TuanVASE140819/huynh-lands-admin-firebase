@@ -21,3 +21,9 @@ export const updateHistory = async (lang, data) => {
     throw error
   }
 }
+
+export const uploadHistoryImage = async (formData) => {
+  return axios.post(`${API_URL}/history/upload-image`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
