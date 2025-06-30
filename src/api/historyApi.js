@@ -27,3 +27,10 @@ export const uploadHistoryImage = async (formData) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+// Lấy ảnh lịch sử
+export const fetchHistoryImage = async () => {
+  const res = await fetch(`${API_URL}/history/image`)
+  if (!res.ok) throw new Error('Failed to fetch history image')
+  return res.json()
+}

@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Input, Button, Tabs } from 'antd'
-import { fetchHistory, updateHistory, uploadHistoryImage } from '../../api/historyApi'
+import {
+  fetchHistory,
+  updateHistory,
+  uploadHistoryImage,
+  fetchHistoryImage,
+} from '../../api/historyApi'
 import { fetchMission, updateMission } from '../../api/missionApi'
 import { fetchVision, updateVision } from '../../api/visionApi'
+import axios from 'axios'
 
 const initialBlocks = {
   vi: [
@@ -102,6 +108,12 @@ const AboutPage = () => {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+    // Lấy ảnh lịch sử từ API
+    fetchHistoryImage()
+      .then((res) => {
+        if (res && res.url) setImageUrl(res.url)
+      })
+      .catch(() => {})
   }, [lang])
 
   const handleOpenModal = (block) => {
