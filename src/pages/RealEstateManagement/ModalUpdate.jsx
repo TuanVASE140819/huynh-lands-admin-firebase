@@ -34,7 +34,7 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
       setPropertyTypes(
         (res.propertyTypes || []).map((item) => ({
           label: item.vi?.name || item.en?.name || item.ko?.name || item.id,
-          value: item.id,
+          value: item.vi?.name || item.en?.name || item.ko?.name || item.id, // <-- value là name thay vì id
         })),
       )
     })
