@@ -128,12 +128,12 @@ function RootLayout(props) {
           theme={{
             components: {
               Menu: {
-                darkItemBg: '#00AFEF', // light blue
-                darkSubMenuItemBg: '#0396CD', // medium blue
-                darkPopupBg: '#007BA7', // dark blue
-                darkItemTextColor: '#FFFFFF', // white text
-                darkHoverItemBg: '#005F73', // darker blue on hover
-                darkSelectedItemBg: '#003A47', // very dark blue for selected items
+                darkItemBg: '#232526', // sidebar: nền đen xám sang trọng
+                darkSubMenuItemBg: '#232526',
+                darkPopupBg: '#232526',
+                darkItemTextColor: '#FFD700', // chữ vàng ánh kim
+                darkHoverItemBg: '#414345',
+                darkSelectedItemBg: '#FFD70022',
               },
             },
           }}
@@ -141,27 +141,36 @@ function RootLayout(props) {
           <Sider
             trigger={null}
             style={{
-              backgroundColor: '#00AFEF',
+              backgroundColor: '#232526', // sidebar: nền đen xám sang trọng
               overflow: 'auto',
               height: '100vh',
               position: 'fixed',
               left: 0,
               top: 0,
               bottom: 0,
+              borderRight: '1px solid #FFD70044',
+              boxShadow: '2px 0 8px 0 #0002',
             }}
             collapsible
             collapsed={collapsed}
           >
-            <div className='h-16 flex  justify-center items-center'>
+            <div className='h-20 flex justify-center items-center'>
               {!collapsed ? (
                 <Link to='/'>
-                  <h2 className='text-lg font-semibold text-white'>
-                    TuanWebApp
-                  </h2>
+                  <div className='flex items-center gap-2'>
+                    <img
+                      className='w-10 h-10 rounded-full border-2 border-[#FFD700] bg-white bg-opacity-80 shadow'
+                      src={logo}
+                      alt='logo'
+                    />
+                    <h2 className='text-xl font-bold bg-gradient-to-r from-[#FFD700] to-[#B8860B] bg-clip-text text-transparent drop-shadow'>
+                      Huỳnh Land
+                    </h2>
+                  </div>
                 </Link>
               ) : (
                 <Link to='/'>
-                  <img className='w-12 py-3' src={logo} />
+                  <img className='w-12 py-3' src={logo} alt='logo' />
                 </Link>
               )}
             </div>
@@ -173,6 +182,7 @@ function RootLayout(props) {
               onOpenChange={onOpenChange}
               onSelect={onSelect}
               items={itemsMenu}
+              className='mt-4'
             />
           </Sider>
         </ConfigProvider>
