@@ -39,6 +39,9 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
         (res.propertyTypes || []).map((item) => ({
           label: item.vi?.name || item.en?.name || item.ko?.name || item.id,
           value: item.id,
+          vi: item.vi?.name || '',
+          en: item.en?.name || '',
+          ko: item.ko?.name || '',
         })),
       )
     })
@@ -115,11 +118,13 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
       )
       const langs = ['vi', 'en', 'ko']
       const property = {}
+      // Lấy tên loại bất động sản theo từng ngôn ngữ
+      const selectedType = propertyTypes.find(pt => pt.value === values.propertyType)
       langs.forEach((lang) => {
         property[lang] = {
           name: values?.title?.[lang] || '',
           address: values?.location?.[lang] || '',
-          code: values.propertyCode || '', // loại bỏ values?.type?.[lang]
+          code: values.propertyCode || '',
           hashtags: values?.features?.[lang]
             ? values.features[lang]
                 .split(',')
@@ -147,6 +152,7 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
                 .filter(Boolean)
             : [],
           mapLocation: { lat: 0, lng: 0 },
+          // XÓA propertyType khỏi từng lang
         }
       })
       // Lấy các url ảnh đã upload
@@ -155,7 +161,7 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
       await createProperty({
         ...property,
         images: imageUrls,
-        propertyType: values.propertyType || null,
+        propertyType: selectedType ? selectedType[activeLang] : '', // truyền tên loại theo ngôn ngữ đang chọn
         businessType: values.businessType || businessType || null,
       })
       form.resetFields()
@@ -244,11 +250,9 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
                   <Form.Item
                     name={['title', tab.key]}
                     label={`Tên BĐS (${tab.label})`}
-                    rules={
-                      tab.key === 'vi'
-                        ? [{ required: true, message: 'Nhập tên BĐS' }]
-                        : []
-                    }
+                    rules={[
+                      { required: true, message: `Nhập tên BĐS (${tab.label})` }
+                    ]}
                   >
                     <Input
                       placeholder={`Nhập tên bất động sản (${tab.label})`}
@@ -259,11 +263,9 @@ const ModalCreate = ({ open, onCancel, onSuccess }) => {
                   <Form.Item
                     name={['location', tab.key]}
                     label={`Địa chỉ (${tab.label})`}
-                    rules={
-                      tab.key === 'vi'
-                        ? [{ required: true, message: 'Nhập địa chỉ' }]
-                        : []
-                    }
+                    rules={[
+                      { required: true, message: `Nhập địa chỉ (${tab.label})` }
+                    ]}
                   >
                     <Input placeholder={`Nhập địa chỉ (${tab.label})`} />
                   </Form.Item>

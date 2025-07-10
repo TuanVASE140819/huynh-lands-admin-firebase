@@ -14,21 +14,23 @@ const UploadImageField = ({ value = [], onChange }) => {
   const handleChange = ({ fileList: newFileList }) => {
     // Lấy url từ response hoặc từ fileList
     const urls = newFileList
-      .filter(f => f.status === 'done' && (f.url || (f.response && f.response.url)))
-      .map(f => f.url || (f.response && f.response.url))
+      .filter(
+        (f) => f.status === 'done' && (f.url || (f.response && f.response.url)),
+      )
+      .map((f) => f.url || (f.response && f.response.url))
     onChange(urls)
   }
 
   const customRequest = async ({ file, onSuccess, onError }) => {
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      const formData = new FormData()
+      formData.append('image', file)
       // Sử dụng đúng logic upload ảnh thực tế như ví dụ của bạn
-      const res = await uploadHistoryImage(formData);
-      onSuccess({ url: res.data.url });
+      const res = await uploadHistoryImage(formData)
+      onSuccess({ url: res.data.url })
     } catch (err) {
-      message.error('Tải ảnh thất bại!');
-      onError(err);
+      message.error('Tải ảnh thất bại!')
+      onError(err)
     }
   }
 
