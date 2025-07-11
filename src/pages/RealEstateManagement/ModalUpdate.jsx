@@ -188,7 +188,7 @@ const ModalUpdate = ({ open, onCancel, data, onSuccess }) => {
           mapLocation: data?.[lang]?.mapLocation || { lat: 0, lng: 0 },
         }
       })
-      await axios.put(`http://localhost:8011/api/property/${data.id}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/property/${data.id}`, {
         ...property,
         images: uploadedFileList.filter((f) => f.url).map((f) => f.url),
         propertyType: values.propertyType || data.propertyType || null,
